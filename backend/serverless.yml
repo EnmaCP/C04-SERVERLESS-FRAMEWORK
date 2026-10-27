@@ -1,0 +1,67 @@
+service: festival-control-api
+frameworkVersion: ~4.45.0
+ 
+provider:
+  name: aws
+  runtime: nodejs22.x
+ 
+plugins:
+  - serverless-offline
+ 
+functions:
+  hello:
+    handler: dist/hello.handler
+    events:
+      - http:
+          path: hello
+          method: get
+          cors: true
+ 
+  getEvent:
+    handler: dist/events/get.handler
+    events:
+      - http:
+          path: events/{id}
+          method: get
+          cors: true
+ 
+  createEvent:
+    handler: dist/events/create.handler
+    events:
+      - http:
+          path: events
+          method: post
+          cors: true
+ 
+  listEvents:
+    handler: dist/events/list.handler
+    events:
+      - http:
+          path: events
+          method: get
+          cors: true
+ 
+  replaceEvent:
+    handler: dist/events/replace.handler
+    events:
+      - http:
+          path: events/{id}
+          method: put
+          cors: true
+ 
+  updateEvent:
+    handler: dist/events/update.handler
+    events:
+      - http:
+          path: events/{id}
+          method: patch
+          cors: true
+ 
+  deleteEvent:
+    handler: dist/events/delete.handler
+    events:
+      - http:
+          path: events/{id}
+          method: delete
+          cors: true
+ 
