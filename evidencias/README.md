@@ -107,3 +107,34 @@ He comprobado la función con Thunder y con `curl -i http://localhost:3000/dev/h
 - Captura o transcripción breve, sin credenciales: Prueba de referencia: PATCH de `EVT-101` con `{"status":"CANCELLED"}` → HTTP 200 y resultado con `operation: "UPDATED"`. No se adjuntó una captura o transcripción de la ejecución real.
 - Limitaciones del ejercicio: La API simula las escrituras y no persiste cambios; por eso la lista mantiene los dos eventos originales. Los estados y cuerpos reales de POST, PUT, PATCH y DELETE deben anotarse a partir de las respuestas observadas.
  
+ # Bloque 08
+
+## Resultado
+- Qué añadí al proyecto: Despliegue de la API a la nube de AWS mediante Serverless Framework, empaquetando los handlers compilados de TypeScript y creando el stack de CloudFormation con las funciones Lambda correspondientes (`hello`, `getEvent`, `createEvent`, `listEvents`, `replaceEvent`, `updateEvent`, `deleteEvent`), asociadas al rol IAM `LabRole` y publicadas mediante API Gateway.
+- Ruta o pantalla comprobada: Endpoint público de API Gateway en AWS: `https://jtc2rp08ij.execute-api.us-east-1.amazonaws.com/dev`, comprobando peticiones GET a `/events` y `/hello`.
+- Estado y respuesta observados: Respuestas HTTP 200 con cabeceras CORS y el payload JSON esperado devuelto directamente desde la infraestructura en la nube de AWS.
+
+## Comprensión
+- Recorrido del dato, explicado con mis palabras: La petición HTTPS llega a AWS API Gateway desde Internet. API Gateway la enruta según el método y ruta a la función AWS Lambda en Node.js 22.x correspondiente, que ejecuta el código compilado con los permisos de `LabRole` y devuelve la respuesta HTTP empaquetada al cliente.
+- Cambio guiado y resultado: Configuración de `serverless.yml` con variables dinámicas de entorno (`STUDENT_CODE`, `AWS_REGION` y `LAMBDA_ROLE_ARN`). Empaquetado y despliegue exitoso con Serverless Framework, obteniendo el `ServiceEndpoint` público en la región `us-east-1`.
+- Error encontrado y cómo lo resolví: Conflicto en el proveedor de credenciales al estar definidas a la vez `AWS_PROFILE=academy` y las variables de sesión en terminal (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`), lo que provocaba que el SDK intentara usar un perfil inexistente en `~/.aws/credentials`. Se resolvió ejecutando `unset AWS_PROFILE` para forzar al SDK a usar las claves y el `AWS_SESSION_TOKEN` temporales de AWS Academy.
+
+## Evidencias
+- Captura o transcripción breve, sin credenciales: Salida de despliegue exitoso del stack `festival-control-api-user4549459-dev` con ServiceEndpoint `https://jtc2rp08ij.execute-api.us-east-1.amazonaws.com/dev`. Invocación de comprobación mediante curl devolviendo HTTP 200 y JSON correspondiente.
+- Limitaciones del ejercicio: Las credenciales de sesión en AWS Academy Learner Lab son temporales y expiran cada 4 horas. La lógica de negocio en las funciones Lambda sigue respondiendo con datos en memoria, sin persistencia en una base de datos administrada como DynamoDB.
+
+# Bloque 09
+
+## Resultado
+- Qué añadí al proyecto: Conexión de la aplicación cliente (Expo / React Native en web) con la API real en la nube de AWS, actualizando `API_URL` en `mobile/src/api.ts` con el endpoint público de API Gateway (`https://jtc2rp08ij.execute-api.us-east-1.amazonaws.com/dev`) con Serverless Offline completamente detenido.
+- Ruta o pantalla comprobada: Interfaz web de Festival Control (`http://localhost:8081`) y la pestaña Network de las herramientas de desarrollador, comprobando los cinco métodos contra AWS: `GET /events`, `POST /events`, `PUT /events/EVT-101`, `PATCH /events/EVT-101` y `DELETE /events/EVT-102`.
+- Estado y respuesta observados: Códigos HTTP esperados recibidos desde la nube: 200 para GET (lista de 2 eventos), 201 para POST (evento creado `EVT-NEW`), 200 para PUT, 200 para PATCH (estado `CANCELLED`, `operation: "UPDATED"`) y 200 para DELETE. El resultado JSON se visualiza formateado en la pantalla bajo los botones.
+
+## Comprensión
+- Recorrido del dato, explicado con mis palabras: Al pulsar cada botón en la aplicación web, el cliente lanza una petición `fetch` HTTPS directa al dominio `execute-api` de AWS. API Gateway gestiona la petición (incluyendo la cabecera preflight CORS), invoca la función Lambda correspondiente en la nube y devuelve la respuesta JSON al navegador. La aplicación web comprueba `response.ok`, parsea el JSON y actualiza el estado de la interfaz sin depender en ningún momento de un servidor local.
+- Cambio guiado y resultado: Sustitución de la constante local `API_URL` en `mobile/src/api.ts` por el endpoint HTTPS desplegado en AWS. Comprobación de que la aplicación funciona de forma autónoma con el backend local apagado.
+- Error encontrado y cómo lo resolví: Error `npm error Missing script: "web"` al intentar arrancar el cliente web desde el directorio `backend`; se resolvió cambiando a la carpeta correcta (`cd ../mobile`). Además, se corrigió una duplicación en `mobile/src/api.ts` asegurando que `API_URL` apuntase limpiamente a la URL de AWS.
+
+## Evidencias
+- Captura o transcripción breve, sin credenciales: Pestaña Network del navegador mostrando las cinco peticiones dirigidas a `https://jtc2rp08ij.execute-api.us-east-1.amazonaws.com/dev/...` con sus respectivos métodos (GET 200, POST 201, PUT 200, PATCH 200, DELETE 200). La pantalla muestra las tarjetas de eventos y el bloque JSON con el resultado de cada acción.
+- Limitaciones del ejercicio: Aunque las llamadas se ejecutan en la infraestructura real de AWS, las funciones Lambda operan sobre un catálogo simulado en memoria sin base de datos (DynamoDB), por lo que al hacer GET de nuevo la lista sigue mostrando únicamente los dos eventos base.
